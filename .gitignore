@@ -214,6 +214,12 @@ l10n/
 # OpenAI key file
 key.txt
 
-input_images_single/
-input_images_multi/
-output_markdown/
+# exclude everything
+input_images_single/*
+input_images_multi/*
+output_markdown/*
+
+# exception to the rule
+!input_images_single/.gitkeep 
+!input_images_multi/.gitkeep
+!output_markdown/.gitkeep
