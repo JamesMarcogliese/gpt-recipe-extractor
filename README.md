@@ -10,7 +10,7 @@ The notebook also includes error handling with exponential backoff. If a request
 
 ## Usage
 
-1. Set your OpenAI API key in a `key.txt` file in the root folder.
+1. Set your OpenAI API key in a `key.txt` file in the root folder. Ensure the key has access to GPT-4.
 2. Place single-page recipe JPG images in a `source_folder_single_page` folder.
 3. Place multiple-page recipe JPG images within subfolders (folder names are unimportant) in a `source_folder_multi_page` folder.
 4. Run the notebook.
