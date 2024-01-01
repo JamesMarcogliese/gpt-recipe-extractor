@@ -215,11 +215,12 @@ l10n/
 key.txt
 
 # exclude everything
-input_images_single/*
-input_images_multi/*
-output_markdown/*
+notebooks/gpt_recipe_extractor/input_images_single/*
+notebooks/gpt_recipe_extractor/input_images_multi/*
+notebooks/gpt_recipe_extractor/output_markdown/*
+notebooks/confluence_uploader/input_markdown/*
 
 # exception to the rule
-!input_images_single/.gitkeep 
-!input_images_multi/.gitkeep
-!output_markdown/.gitkeep
+!notebooks/gpt_recipe_extractor/input_images_single/.gitkeep 
+!notebooks/gpt_recipe_extractor/input_images_multi/.gitkeep
+!notebooks/gpt_recipe_extractor/output_markdown/.gitkeep

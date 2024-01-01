@@ -1,28 +1,35 @@
 # GPT-4 Recipe Extractor
 
-This Jupyter notebook uses the OpenAI GPT-4 Vision model to extract recipes from images. It supports both single-page, multi-page, and multi-recipe-on-single-page images.
+This repository contains resources for the GPT-4 Recipe Extractor, a tool that utilizes the OpenAI GPT-4 Vision model to extract recipes from images. The repository is organized into two main folders:
 
-## How it works
+## CloudFormation
 
-The notebook scans a source directory for images of recipes. For multi-page recipes, each recipe should be in its own subfolder within the source directory. The images are then sent to the GPT-4 Vision model, which returns the extracted recipe in markdown format. The markdown is saved to a destination directory.
+The `CloudFormation` folder contains AWS CloudFormation scripts and Lambda code for setting up an automated event-driven AWS architecture to process recipe images and/or upload them to a Confluence space. Here's an overview of its contents:
 
-The notebook also includes error handling with exponential backoff. If a request to the GPT-4 Vision model fails, the notebook will retry the request with an increasing wait time between each attempt.
+- `cloudformation_template.yml`: CloudFormation script defining AWS resources for processing recipe images. It includes IAM roles, S3 buckets, SQS queues, Lambda functions, and event triggers. This script automates the processing of images and markdown generation.
 
-## Usage
+To get started with the AWS architecture, follow the instructions provided in the `CloudFormation` subfolder.
 
-1. Set your OpenAI API key in a `key.txt` file in the root folder. Ensure the key has access to GPT-4.
-2. Place single-page recipe `JPG` images in the `source_folder_single_page` folder.
-3. Place multiple-page recipe `JPG` images within subfolders (subfolder names are unimportant) in the `source_folder_multi_page` folder.
-4. Run the notebook.
-5. Markdown files formatted with the recipe name will be found in the `output_markdown` folder.
+## Notebook
 
-## Requirements
+The `Notebook` folder contains Jupyter notebooks for manually running the recipe extraction code locally using the OpenAI GPT-4 Vision model. Here's an overview of its contents:
+
+- `gpt-recipe-extractor.ipynb`: Jupyter notebook that demonstrates how to use the OpenAI GPT-4 Vision model to extract recipes from images. It supports both single-page and multi-page recipes.
+- `confluence-recipe-uploader.ipynb`: Jupyter notebook that demonstrates how to upload the recipe markdown files to a Confluence space.
+
+### Requirements
 
 - Python 3
 - `requests` library
 - `glob` library
 - OpenAI API key
 
-## Limitations
+### Limitations
 
 The notebook assumes that the GPT-4 Vision model can accurately extract recipes from images. The accuracy of the extraction may vary depending on the quality and complexity of the images.
+
+Feel free to explore and use the resources provided in this repository for automating recipe extraction and experimenting with the GPT-4 Vision model.
+
+If you have any questions or encounter issues, please refer to the individual README files within each folder or reach out to the repository owner for assistance.
+
+![High-Level Arch Vis](/images/gpt-recipe-extractor.png)
