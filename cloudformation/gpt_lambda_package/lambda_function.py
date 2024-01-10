@@ -18,7 +18,7 @@ api_key = os.environ['API_KEY']
 destination_bucket = os.environ['DESTINATION_BUCKET']
 
 MAX_TOKENS = 4096
-max_retries = 5
+max_retries = 7
 
 extraction_prompt = """
 Attached is a magazine page containing one or more recipes. Please extract the following for each recipe in markdown format:
@@ -28,6 +28,7 @@ Attached is a magazine page containing one or more recipes. Please extract the f
 -Ingredients (with Heading level 2)
 -Instructions (with Heading level 2)
 -Cuisine name inferred from recipe (with Heading level 2)
+-Tips (with Heading level 2)
 """
 
 
