@@ -101,6 +101,8 @@ Resources:
     Properties:
       EventSourceArn: !GetAtt ImageNotificationQueue.Arn
       FunctionName: !GetAtt Img2MdLambda.Arn
+      ScalingConfig:
+        MaximumConcurrency: 2
       Enabled: true
     Metadata:
       'AWS::CloudFormation::Designer':

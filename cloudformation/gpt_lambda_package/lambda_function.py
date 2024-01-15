@@ -5,6 +5,7 @@ import json
 import re
 import boto3
 import time
+from botocore.exceptions import ClientError
 
 # RECALL > zip -r gpt_lambda_package.zip .
 
@@ -18,7 +19,7 @@ api_key = os.environ['API_KEY']
 destination_bucket = os.environ['DESTINATION_BUCKET']
 
 MAX_TOKENS = 4096
-max_retries = 7
+max_retries = 10
 
 extraction_prompt = """
 Attached is a magazine page containing one or more recipes. Please extract the following for each recipe in markdown format:
@@ -43,8 +44,14 @@ def save_markdown_to_s3(markdown, destination_bucket):
     for i, recipe in enumerate(recipes):
         if i > 0:
             recipe = '# ' + recipe
+
         heading = re.search(r'^# (.*)$', recipe, re.MULTILINE)
-        filename = heading.group(1) + '.md' if heading else f'default{i}.md'
+
+        if heading:
+            filename = heading.group(1) + '.md'
+        else:
+            raise ValueError(f"No valid heading found in recipe index {i}")
+
         s3_client.put_object(Body=recipe, Bucket=destination_bucket, Key=f'{filename}')
 
 
@@ -54,11 +61,23 @@ def lambda_handler(event, context):
     # Process S3 event
     message = event['Records'][0]['body']
 
-    message_json = json.loads(message) # SNS message is a string, not JSON, so covert it.
+    message_json = json.loads(message) # SNS message is a string, not JSON, so convert it.
     print(message_json)
     # Extract bucket name and file key from the SQS message
     bucket_name = message_json['Records'][0]['s3']['bucket']['name']
     object_key = message_json['Records'][0]['s3']['object']['key']
+    
+    # Check if the file exists in S3
+    try:
+        s3_client.head_object(Bucket=bucket_name, Key=object_key)
+    except ClientError as e:
+        # If the file doesn't exist, log the error and exit early
+        if e.response['Error']['Code'] == 'NoSuchKey':
+            print(f"File {object_key} does not exist in bucket {bucket_name}")
+            return
+        else:
+            # Other S3 errors are re-raised
+            raise
 
     # Get the image file from S3
     response = s3_client.get_object(Bucket=bucket_name, Key=object_key)
