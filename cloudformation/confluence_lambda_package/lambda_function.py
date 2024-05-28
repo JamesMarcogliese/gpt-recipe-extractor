@@ -17,6 +17,7 @@ CONFLUENCE_USERNAME = os.environ['CONFLUENCE_USERNAME']
 API_TOKEN = os.environ['API_TOKEN']
 SPACE_ID = os.environ['SPACE_ID']
 PARENT_PAGE_ID = os.environ['PARENT_PAGE_ID']
+PAGE_TITLE_PREFIX = os.environ.get('PAGE_TITLE_PREFIX', '')
 
 auth = HTTPBasicAuth(CONFLUENCE_USERNAME, API_TOKEN)
 
@@ -25,16 +26,16 @@ auth = HTTPBasicAuth(CONFLUENCE_USERNAME, API_TOKEN)
 def page_exists(title):
     headers = {"Accept": "application/json"}
     params = {
-        "spaceId": SPACE_ID,
+        "spaceKey": SPACE_ID,
         "title": title
     }
-    response = requests.get(CONFLUENCE_API_URL, headers=headers, params=params, auth=auth)
+    response = requests.get(f"{CONFLUENCE_API_URL}/wiki/api/v2/pages", headers=headers, params=params, auth=auth)
 
     if response.status_code == 200:
         data = response.json()
-        return len(data.get("results")) > 0
-
-    return False
+        if len(data.get("results", [])) > 0:
+            return data["results"][0]["id"]
+    return None
 
 
 # Function to create a new Confluence page from a Markdown file within a parent page
@@ -54,14 +55,42 @@ def create_page_within_parent(title, content):
             "value": content,
             "representation": "wiki"
         },
+        "metadata": {
+            "properties": {
+                "editor" : {
+                    "value" : "v2"
+                }
+            }
+        }
     }
 
-    response = requests.post(CONFLUENCE_API_URL, headers=headers, json=payload, auth=auth)
+    response = requests.post(f"{CONFLUENCE_API_URL}/wiki/api/v2/pages", headers=headers, json=payload, auth=auth)
 
     if response.status_code == 200:
         print(f"Page '{title}' created successfully within parent page ID {PARENT_PAGE_ID}.")
+        return response.json()["id"]
     else:
         print(f"Failed to create page '{title}' with status code {response.status_code}: {response.text}")
+        return None
+        
+# Function to add a label to a Confluence page
+def add_label_to_page(page_id, label):
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+
+    payload = [{
+        "prefix": "global",
+        "name": label
+    }]
+
+    response = requests.post(f"{CONFLUENCE_API_URL}/wiki/rest/api/content/{page_id}/label", headers=headers, json=payload, auth=auth)
+
+    if response.status_code == 200:
+        print(f"Label '{label}' added successfully to page ID {page_id}.")
+    else:
+        print(f"Failed to add label '{label}' to page ID {page_id} with status code {response.status_code}: {response.text}")
 
 
 # Function to convert Markdown text to Confluence Wiki Markup
@@ -80,10 +109,23 @@ def markdown_to_confluence(markdown_text):
     # Convert bullet points
     # Confluence uses "*" for bullet lists.
     markdown_text = re.sub(r'^- (.*)', r'* \1', markdown_text, flags=re.MULTILINE)
+    
+    # Convert images
+    # Markdown: ![alt text](url "title")
+    # Confluence Wiki Markup: !url|alt=alt text|title=title!
+    markdown_text = re.sub(r'!\[(.*?)\]\((.*?)\s*("(.*?)")?\)', r'!\2|alt=\1|title=\4!', markdown_text)
+
 
     # Additional conversions can be added here (italic, bold, links, images, etc.)
 
     return markdown_text
+
+
+def extract_category(markdown_text):
+    match = re.search(r'^## Category\s*(.*)$', markdown_text, re.MULTILINE)
+    if match:
+        return match.group(1).strip()
+    return "Uncategorized"
 
 
 # Lambda handler function
@@ -103,11 +145,17 @@ def lambda_handler(event, context):
     response = s3_client.get_object(Bucket=bucket_name, Key=decoded_object_key)
     content = response['Body'].read().decode('utf-8')
 
-    # Use the filename (without extension) as the page title
-    page_title = os.path.splitext(os.path.basename(decoded_object_key))[0]
+    # Use the filename (without extension) as the page title, with the prefix
+    page_title = PAGE_TITLE_PREFIX + os.path.splitext(os.path.basename(decoded_object_key))[0]
+    
+    # Extract the category from the content
+    category = extract_category(content)
 
     # Check if the page already exists, and create it within the parent page if not
-    if not page_exists(page_title):
-        create_page_within_parent(page_title, markdown_to_confluence(content))
+    existing_page_id = page_exists(page_title)
+    if not existing_page_id:
+        page_id = create_page_within_parent(page_title, markdown_to_confluence(content))
+        if page_id:
+            add_label_to_page(page_id, category)
     else:
         print(f"Page '{page_title}' already exists. Skipping.")
